@@ -22,3 +22,6 @@ Thumbs.db
 models/*.joblib
 models/*.json
 models/*.csv
+!models/churn_pipeline.joblib
+!models/metrics.json
+!models/test_predictions.csv

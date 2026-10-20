@@ -1,0 +1,27 @@
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    STREAMLIT_SERVER_HEADLESS=true \
+    STREAMLIT_SERVER_ENABLE_CORS=false \
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    MPLCONFIGDIR=/tmp/matplotlib
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+    && useradd --create-home --shell /usr/sbin/nologin appuser \
+    && mkdir -p /tmp/matplotlib /app/.streamlit /app/models \
+    && chown -R appuser:appuser /app /tmp/matplotlib
+
+COPY --chown=appuser:appuser app.py train_model.py ./
+COPY --chown=appuser:appuser data/ ./data/
+COPY --chown=appuser:appuser .streamlit/config.toml ./.streamlit/config.toml
+COPY --chown=appuser:appuser models/churn_pipeline.joblib models/metrics.json models/test_predictions.csv ./models/
+
+USER appuser
+EXPOSE 80
+
+CMD ["sh", "-c", "streamlit run app.py --server.address=0.0.0.0 --server.port=${PORT:-80}"]

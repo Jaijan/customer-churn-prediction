@@ -31,7 +31,7 @@ From the project root:
 .\.venv\Scripts\streamlit.exe run app.py
 ```
 
-An alternate data path can be supplied with `--data path\to\file.csv`. Artifacts are written to `models/`: the selected fitted pipeline, both candidate pipelines for interpretation, `metrics.json`, and real held-out `test_predictions.csv`. Model outputs are ignored by Git and can be regenerated.
+An alternate data path can be supplied with `--data path\to\file.csv`. Artifacts are written to `models/`: the selected fitted pipeline, compact interpretation metadata for both candidates, evaluation metadata, and real held-out `test_predictions.csv`. The deployment artifacts are included in the repository so Vercel can serve the same trained evaluation run; other generated artifacts remain ignored.
 
 ## Modeling and evaluation
 
@@ -50,3 +50,16 @@ The interactive threshold is configurable for risk categorization. Reported cand
 ## Limitations
 
 This is historical public sample data for a fictional telecom provider. Sampling, missingness, measurement choices, and time drift limit generalization. Associations and feature importance are not causal evidence. Before operational use, validate on current data, assess calibration and subgroup performance, and test retention actions with measured outcomes.
+
+## Deploy to Vercel
+
+The repository includes `Dockerfile.vercel`, which packages the Streamlit app and its saved model artifacts as a Vercel container function. Import `Jaijan/customer-churn-prediction` from GitHub in Vercel and deploy the `main` branch. Vercel can detect the root `Dockerfile.vercel`; no separate frontend build command is needed. Future pushes to `main` can trigger deployments through the Vercel Git integration.
+
+To check the image locally with Docker before deploying:
+
+```powershell
+docker build -f Dockerfile.vercel -t churniq .
+docker run --rm -p 8501:80 -e PORT=80 churniq
+```
+
+Open `http://localhost:8501` to inspect the containerized dashboard. Vercel's container functions support Streamlit's WebSocket traffic, but WebSockets are currently beta and have connection-duration limits; an interrupted connection can reset an interactive Streamlit session. This setup is suitable for a demo, while a service intended for long uninterrupted sessions may be better hosted on a platform with persistent web processes.

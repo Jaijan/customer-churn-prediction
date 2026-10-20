@@ -71,6 +71,22 @@ def evaluate(pipe, X, y):
         "classification_report": classification_report(y, pred, labels=[0, 1],
             target_names=["No churn", "Churn"], output_dict=True, zero_division=0)}
 
+def summarize_model(pipe, limit=20):
+    """Keep readable model interpretation small enough to ship with the dashboard."""
+    names = pipe.named_steps["preprocess"].get_feature_names_out()
+    estimator = pipe.named_steps["model"]
+    if hasattr(estimator, "coef_"):
+        values = estimator.coef_[0]
+        order = np.argsort(np.abs(values))[::-1][:limit]
+        return {"kind": "coefficient", "features": [
+            {"feature": str(names[i]), "value": float(values[i]),
+             "direction": "Higher estimated churn" if values[i] >= 0 else "Lower estimated churn"}
+            for i in order]}
+    values = estimator.feature_importances_
+    order = np.argsort(values)[::-1][:limit]
+    return {"kind": "importance", "features": [
+        {"feature": str(names[i]), "value": float(values[i])} for i in order]}
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", help="Path to Telco CSV")
@@ -106,9 +122,10 @@ def main():
     for model in fitted.values(): model.evaluation_run_id = run_id
     out = ROOT / "models"; out.mkdir(exist_ok=True)
     joblib.dump(final, out / "churn_pipeline.joblib")
-    joblib.dump(fitted, out / "candidate_pipelines.joblib")
     meta = {"evaluation_run_id": run_id, "selected_model": winner, "selection_metric": "validation ROC-AUC",
-        "validation_roc_auc": validation, "metrics": results, "feature_columns": X.columns.tolist(),
+        "validation_roc_auc": validation, "metrics": results,
+        "model_interpretation": {name: summarize_model(model) for name, model in fitted.items()},
+        "feature_columns": X.columns.tolist(),
         "target": "Churn", "threshold": THRESHOLD, "dataset_rows": int(len(df)),
         "feature_count": int(X.shape[1]), "missing_values": {k: int(v) for k,v in df.isna().sum().items()},
         "class_distribution": {"No": int((y == 0).sum()), "Yes": int((y == 1).sum())},

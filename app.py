@@ -15,7 +15,6 @@ from train_model import load_data
 
 ROOT = Path(__file__).resolve().parent
 MODEL_PATH, METRICS_PATH = ROOT / "models/churn_pipeline.joblib", ROOT / "models/metrics.json"
-PIPES_PATH = ROOT / "models/candidate_pipelines.joblib"
 PRED_PATH = ROOT / "models/test_predictions.csv"
 st.set_page_config(page_title="ChurnIQ | Retention Intelligence", page_icon="C", layout="wide", initial_sidebar_state="expanded")
 plt.rcParams.update({
@@ -82,9 +81,6 @@ def dataset(): return load_data()
 
 @st.cache_resource
 def model_artifact(): return joblib.load(MODEL_PATH)
-
-@st.cache_resource
-def candidate_artifacts(): return joblib.load(PIPES_PATH)
 
 def metadata(): return json.loads(METRICS_PATH.read_text(encoding="utf-8"))
 
@@ -173,8 +169,8 @@ elif page == "Model evaluation":
         run_matches = ("evaluation_run_id" in pred and
                        pred.evaluation_run_id.nunique() == 1 and
                        pred.evaluation_run_id.iloc[0] == meta.get("evaluation_run_id") and
-                       PIPES_PATH.is_file() and
-                       candidate_artifacts()[meta["selected_model"]].evaluation_run_id == meta.get("evaluation_run_id"))
+                       MODEL_PATH.is_file() and
+                       model_artifact().evaluation_run_id == meta.get("evaluation_run_id"))
         if run_matches and pred.actual_churn.nunique()==2 and pred.churn_probability.between(0,1).all():
             y=pred.actual_churn; p=pred.churn_probability
             fig,ax=plt.subplots(); RocCurveDisplay.from_predictions(y,p,ax=ax); st.pyplot(fig); plt.close(fig)
@@ -183,19 +179,14 @@ elif page == "Model evaluation":
         else: st.warning("Saved prediction artifacts do not match this evaluation run. Retrain to regenerate a consistent artifact set.")
     st.write("False positives are customers flagged who stayed, potentially using outreach capacity unnecessarily. False negatives are customers who churned but were not flagged. A lower cutoff usually catches more churners while also increasing false alarms; use costs and capacity to choose it.")
     st.markdown("#### Model interpretation")
-    if PIPES_PATH.is_file():
-        pipe = candidate_artifacts()[selected]
-        estimator = pipe.named_steps["model"]
-        feature_names = pipe.named_steps["preprocess"].get_feature_names_out()
-        if hasattr(estimator, "coef_"):
-            weights = estimator.coef_[0]
-            top = pd.DataFrame({"Feature": feature_names, "Coefficient": weights})
-            top["Direction"] = np.where(top.Coefficient >= 0, "Higher estimated churn", "Lower estimated churn")
-            top["Magnitude"] = top.Coefficient.abs()
+    summary = meta.get("model_interpretation", {}).get(selected)
+    if summary:
+        top = pd.DataFrame(summary["features"])
+        top = top.rename(columns={"feature":"Encoded feature", "value":"Coefficient" if summary["kind"] == "coefficient" else "Importance"})
+        if summary["kind"] == "coefficient":
             st.caption("Logistic Regression coefficients are on transformed inputs; numeric features are standardized. Positive values shift estimated churn odds upward, holding other encoded inputs fixed.")
-            st.dataframe(top.sort_values("Magnitude", ascending=False).drop(columns="Magnitude").head(15).style.format({"Coefficient":"{:.3f}"}),width="stretch")
-        elif hasattr(estimator, "feature_importances_"):
-            top = pd.DataFrame({"Feature": feature_names, "Importance": estimator.feature_importances_}).sort_values("Importance",ascending=False).head(15)
+            st.dataframe(top.style.format({"Coefficient":"{:.3f}"}),width="stretch")
+        else:
             st.caption("Random Forest impurity importance summarizes how the fitted trees used transformed features. It is not a causal effect.")
             st.dataframe(top.style.format({"Importance":"{:.4f}"}),width="stretch")
     with st.expander("Classification reports"):
@@ -253,7 +244,7 @@ else:
         st.write(f"Median monthly charges were {medians.get(1, float('nan')):.2f} among churned customers and {medians.get(0, float('nan')):.2f} among retained customers (source data units).")
     if METRICS_PATH.is_file():
         meta=metadata(); st.write(f"The saved run selected **{meta['selected_model']}** using validation ROC-AUC ({meta['validation_roc_auc'][meta['selected_model']]:.3f}). Its held-out test ROC-AUC was {meta['metrics'][meta['selected_model']]['roc_auc']:.3f}; the reported classification threshold is {meta['threshold']:.2f}.")
-        selected_pipe=candidate_artifacts()[meta["selected_model"]]
+        selected_pipe=model_artifact()
         estimator=selected_pipe.named_steps["model"]
         names=selected_pipe.named_steps["preprocess"].get_feature_names_out()
         if hasattr(estimator,"coef_"):
