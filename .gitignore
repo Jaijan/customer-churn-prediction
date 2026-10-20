@@ -1,0 +1,23 @@
+# Python environments and caches
+.venv/
+venv/
+.tools/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local secrets and editor/OS state
+.env
+.env.*
+!.env.example
+.streamlit/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Generated model artifacts (recreate with train_model.py)
+models/*.joblib
+models/*.json
+models/*.csv
