@@ -53,7 +53,7 @@ This is historical public sample data for a fictional telecom provider. Sampling
 
 ## Deploy to Vercel
 
-The repository includes `Dockerfile.vercel`, which packages the Streamlit app and its saved model artifacts as a Vercel container function. Import `Jaijan/customer-churn-prediction` from GitHub in Vercel and deploy the `main` branch. Vercel can detect the root `Dockerfile.vercel`; no separate frontend build command is needed. Future pushes to `main` can trigger deployments through the Vercel Git integration.
+The repository includes `Dockerfile.vercel` and `vercel.json`. The Vercel service configuration explicitly selects the container runtime and routes all app requests to it. This prevents Vercel from interpreting Streamlit's `app.py` as a Python Function (which expects an exported WSGI/ASGI `app`). Import `Jaijan/customer-churn-prediction` from GitHub in Vercel, keep the project root as the repository root, and deploy the `main` branch. Leave build and output overrides empty; `Dockerfile.vercel` defines the container build and start command. Future pushes to `main` can trigger deployments through the Vercel Git integration.
 
 To check the image locally with Docker before deploying:
 
