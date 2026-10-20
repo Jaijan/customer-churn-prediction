@@ -17,14 +17,65 @@ ROOT = Path(__file__).resolve().parent
 MODEL_PATH, METRICS_PATH = ROOT / "models/churn_pipeline.joblib", ROOT / "models/metrics.json"
 PIPES_PATH = ROOT / "models/candidate_pipelines.joblib"
 PRED_PATH = ROOT / "models/test_predictions.csv"
-st.set_page_config(page_title="ChurnIQ | Retention Intelligence", page_icon="📊", layout="wide")
-st.markdown("""<style>
-.block-container{padding-top:1.5rem;max-width:1450px}
-[data-testid="stMetric"]{background:#f3f7fc;border:1px solid #e0e9f5;padding:16px;border-radius:12px}
-h1,h2,h3{color:#15324f}
-</style>""", unsafe_allow_html=True)
-st.title("📊 ChurnIQ")
-st.caption("CUSTOMER RETENTION INTELLIGENCE · IBM Telco Customer Churn case study")
+st.set_page_config(page_title="ChurnIQ | Retention Intelligence", page_icon="C", layout="wide", initial_sidebar_state="expanded")
+plt.rcParams.update({
+    "figure.figsize": (7.2, 3.5), "figure.facecolor": "#FFFFFF", "axes.facecolor": "#FFFFFF",
+    "axes.edgecolor": "#E3EAF3", "axes.labelcolor": "#61718A", "text.color": "#172B4D",
+    "xtick.color": "#61718A", "ytick.color": "#61718A", "font.size": 10,
+    "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True,
+    "axes.axisbelow": True, "grid.color": "#EAF0F6", "grid.linewidth": 0.8,
+})
+st.markdown("""
+<style>
+:root{--ink:#172B4D;--muted:#66758B;--blue:#2563EB;--line:#E3EAF3;--paper:#FFFFFF;--canvas:#F4F7FB}
+.stApp{background:var(--canvas);color:var(--ink)}
+.block-container{max-width:1380px;padding:1.5rem 2.25rem 3rem}
+header[data-testid="stHeader"]{background:rgba(244,247,251,.88)}
+h1,h2,h3,h4{color:var(--ink);letter-spacing:-.025em}
+p,li{color:#33445D}
+section[data-testid="stSidebar"]{background:#10243B;border-right:1px solid #1E3856}
+section[data-testid="stSidebar"] *{color:#EAF1FA}
+section[data-testid="stSidebar"] [data-testid="stRadio"] label{border-radius:10px;padding:.35rem .45rem}
+section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover{background:#1B3655}
+.side-brand{display:flex;align-items:center;gap:12px;padding:.35rem .25rem 1.5rem}
+.side-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(145deg,#4F8DFF,#2357C6);font-weight:800;color:white!important;box-shadow:0 7px 18px #06172d66}
+.side-name{font-size:1.1rem;font-weight:750;line-height:1.15;color:#fff!important}
+.side-caption{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#93A8C2!important;margin-top:4px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin:0 0 2.1rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.topline-brand{display:flex;align-items:center;gap:12px}
+.main-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#4F8DFF,#2357C6);font-size:1rem;font-weight:800;color:#fff!important;box-shadow:0 6px 16px #2357c633}
+.main-brand-name{font-size:1.38rem;font-weight:800;line-height:1.1;letter-spacing:-.035em;color:var(--ink)!important}
+.topline-label{font-size:.69rem;font-weight:650;letter-spacing:.105em;color:#64748B;text-transform:uppercase;margin-top:4px}
+.status-pill{border:1px solid #B8E4D1;background:#ECFDF5;color:#13734C!important;border-radius:99px;padding:.35rem .7rem;font-size:.76rem;font-weight:650;white-space:nowrap}
+.page-kicker{color:var(--blue)!important;font-size:.72rem;font-weight:750;letter-spacing:.15em;text-transform:uppercase;margin:0 0 .45rem}
+.page-title{color:var(--ink)!important;font-size:2.1rem;font-weight:760;letter-spacing:-.045em;line-height:1.13;margin:0 0 .55rem}
+.page-description{color:var(--muted)!important;font-size:1rem;line-height:1.6;max-width:850px;margin:0 0 1.55rem}
+[data-testid="stMetric"]{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:1.05rem 1.15rem;box-shadow:0 3px 12px #1c35520a;min-height:112px}
+[data-testid="stMetricLabel"] p{color:var(--muted)!important;font-size:.82rem;font-weight:600}
+[data-testid="stMetricValue"]{color:var(--ink)!important;font-size:1.85rem;font-weight:740}
+[data-testid="stMetricDelta"]{font-size:.76rem}
+[data-testid="stVerticalBlockBorderWrapper"]{background:#fff;border-color:var(--line);border-radius:16px}
+[data-testid="stAlert"]{border-radius:12px;border:1px solid var(--line)}
+[data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+[data-testid="stSelectbox"] [data-baseweb="select"]>div{background:#fff!important;border:1px solid #D8E2EE!important;border-radius:10px!important;color:#172B4D!important;min-height:42px}
+[data-testid="stSelectbox"] [data-baseweb="select"] *{color:#172B4D!important}
+[data-testid="stSelectbox"] [data-baseweb="select"] svg{fill:#64748B!important}
+[data-testid="stNumberInput"] input{background:#fff!important;color:#172B4D!important;border-color:#D8E2EE!important;border-radius:9px!important}
+[data-testid="stSlider"] [data-testid="stThumbValue"]{color:#172B4D!important}
+div[data-testid="stMarkdownContainer"] h3{margin-top:.3rem}
+.section-note{color:var(--muted);font-size:.86rem;margin-top:-.2rem;margin-bottom:.8rem}
+@media(max-width:800px){.block-container{padding:1.1rem 1rem 2rem}.page-title{font-size:1.7rem}.topline{margin-bottom:1.4rem}}
+</style>
+""", unsafe_allow_html=True)
+
+def page_header(kicker, title, description):
+    st.markdown(f"""<div class="page-kicker">{kicker}</div>
+    <div class="page-title">{title}</div>
+    <div class="page-description">{description}</div>""", unsafe_allow_html=True)
+
+st.markdown("""<div class="topline"><div class="topline-brand"><div class="main-mark">C</div><div>
+<div class="main-brand-name">ChurnIQ</div><div class="topline-label">Customer retention intelligence · IBM Telco case study</div></div></div>
+<div class="status-pill">● &nbsp; Local analytics</div></div>""", unsafe_allow_html=True)
 
 @st.cache_data
 def dataset(): return load_data()
@@ -38,10 +89,16 @@ def candidate_artifacts(): return joblib.load(PIPES_PATH)
 def metadata(): return json.loads(METRICS_PATH.read_text(encoding="utf-8"))
 
 with st.sidebar:
-    st.header("Navigate")
+    st.markdown("""<div class="side-brand"><div class="side-mark">C</div><div>
+    <div class="side-name">ChurnIQ</div><div class="side-caption">Retention intelligence</div></div></div>""", unsafe_allow_html=True)
+    st.markdown("<div class='side-caption' style='padding:.2rem .45rem .6rem'>Workspace</div>", unsafe_allow_html=True)
     page = st.radio("Section", ["Executive overview", "Explore data", "Model evaluation", "Predict a customer", "Business insights & limitations"])
-    threshold = st.slider("Classification threshold", 0.10, 0.90, 0.50, 0.05,
-                          help="A probability at or above this cutoff is classified as higher risk.")
+    if page == "Predict a customer":
+        st.divider()
+        threshold = st.slider("Risk threshold", 0.10, 0.90, 0.50, 0.05,
+                              help="Profiles at or above this probability are marked higher risk.")
+    else:
+        threshold = 0.50
     st.divider(); st.caption("Local educational case study · Historical sample data")
 
 try:
@@ -57,50 +114,49 @@ cat_cols = [c for c in raw.columns if c not in num_cols + ["ChurnLabel"]]
 
 def bar_rate(data, col, ax):
     rates = data.groupby(col, dropna=False, observed=False).Churn.mean().sort_values(ascending=False)
-    rates.plot(kind="bar", ax=ax, color="#3977b8")
+    rates.plot(kind="bar", ax=ax, color="#3778E5", width=.64, zorder=3)
     ax.set_ylabel("Observed churn rate"); ax.set_xlabel(""); ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.0%}"))
-    ax.tick_params(axis="x", rotation=25)
+    ax.tick_params(axis="x", rotation=0); ax.grid(axis="y"); ax.grid(axis="x", visible=False)
 
 if page == "Executive overview":
-    st.subheader("A clearer view of customer retention")
-    st.write("Churn prediction estimates which customer profiles resemble historical customers who left. It can help prioritize review; it cannot establish why someone leaves or guarantee an intervention will work.")
+    page_header("01 / Executive overview", "A clearer view of customer retention", "Historical churn outcomes and contract patterns to help frame the retention problem. These are observed results, not individual risk predictions.")
     a,b,c,d=st.columns(4)
     a.metric("Total customers", f"{len(raw):,}"); b.metric("Observed churn rate", f"{raw.Churn.mean():.1%}")
     c.metric("Churned", f"{int(raw.Churn.sum()):,}"); d.metric("Retained", f"{int((raw.Churn==0).sum()):,}")
     left,right=st.columns(2)
     with left:
         st.markdown("#### Customer outcomes")
-        fig,ax=plt.subplots(); counts=raw.ChurnLabel.value_counts().reindex(["Retained","Churned"]); ax.bar(counts.index,counts.values,color=["#9db8d3","#3977b8"]); ax.set_ylabel("Customers"); st.pyplot(fig); plt.close(fig)
+        fig,ax=plt.subplots(); counts=raw.ChurnLabel.value_counts().reindex(["Retained","Churned"]); ax.bar(counts.index,counts.values,color=["#A9BCD3","#3778E5"],width=.58,zorder=3); ax.set_ylabel("Customers"); ax.grid(axis="y"); ax.grid(axis="x",visible=False); st.pyplot(fig); plt.close(fig)
     with right:
         st.markdown("#### Observed churn by contract")
         if "Contract" in raw:
             fig,ax=plt.subplots(); bar_rate(raw,"Contract",ax); st.pyplot(fig); plt.close(fig)
         else: st.info("Contract field is not present.")
-    st.info("Observed churn is a dataset outcome. Predicted risk is a model estimate for a profile; the two should not be confused.")
+    st.info("Observed churn is a dataset outcome. Predicted risk is a model estimate for a profile. The two are different measures.")
 
 elif page == "Explore data":
-    st.subheader("Exploratory data analysis")
+    page_header("02 / Explore", "Explore customer patterns", "Compare observed churn across tenure, monthly charges, and service or account categories. Associations in historical data do not establish causes.")
     l,r=st.columns(2)
     with l:
         st.markdown("#### Churn distribution")
         counts=raw.ChurnLabel.value_counts().reindex(["Retained","Churned"])
-        fig,ax=plt.subplots(); ax.bar(counts.index,counts.values,color=["#9db8d3","#3977b8"]); ax.set_ylabel("Customers"); st.pyplot(fig); plt.close(fig)
+        fig,ax=plt.subplots(); ax.bar(counts.index,counts.values,color=["#A9BCD3","#3778E5"],width=.58,zorder=3); ax.set_ylabel("Customers"); ax.grid(axis="y"); ax.grid(axis="x",visible=False); st.pyplot(fig); plt.close(fig)
         if "tenure" in raw:
             st.markdown("#### Tenure by observed outcome")
-            fig,ax=plt.subplots(); sns.boxplot(data=raw,x="ChurnLabel",y="tenure",order=["Retained","Churned"],ax=ax,color="#9db8d3"); ax.set_xlabel(""); ax.set_ylabel("Tenure (months)"); st.pyplot(fig); plt.close(fig)
+            fig,ax=plt.subplots(); sns.boxplot(data=raw,x="ChurnLabel",y="tenure",order=["Retained","Churned"],ax=ax,color="#A9BCD3",width=.5,fliersize=2); ax.set_xlabel(""); ax.set_ylabel("Tenure (months)"); ax.grid(axis="x",visible=False); st.pyplot(fig); plt.close(fig)
     with r:
         st.markdown("#### Monthly charges by outcome")
         if "MonthlyCharges" in raw:
-            fig,ax=plt.subplots(); sns.boxplot(data=raw,x="ChurnLabel",y="MonthlyCharges",order=["Retained","Churned"],ax=ax,color="#9db8d3"); ax.set_xlabel(""); ax.set_ylabel("Monthly charges"); st.pyplot(fig); plt.close(fig)
+            fig,ax=plt.subplots(); sns.boxplot(data=raw,x="ChurnLabel",y="MonthlyCharges",order=["Retained","Churned"],ax=ax,color="#A9BCD3",width=.5,fliersize=2); ax.set_xlabel(""); ax.set_ylabel("Monthly charges"); ax.grid(axis="x",visible=False); st.pyplot(fig); plt.close(fig)
         st.markdown("#### Churn across a categorical feature")
         choice=st.selectbox("Feature",cat_cols, index=(cat_cols.index("Contract") if "Contract" in cat_cols else 0))
         fig,ax=plt.subplots(); bar_rate(raw,choice,ax); st.pyplot(fig); plt.close(fig)
         grouped=raw.groupby(choice,dropna=False).Churn.agg(["mean","count"]).rename(columns={"mean":"Churn rate","count":"Customers"})
     st.dataframe(grouped.style.format({"Churn rate":"{:.1%}"}),width="stretch")
-    st.caption(f"Loaded dataset: {len(raw):,} rows · {raw.drop(columns=['Churn','ChurnLabel']).shape[1]} input features · {int(raw.isna().sum().sum()):,} missing cells after numeric conversion. These are associations, not causal effects.")
+    st.caption(f"{len(raw):,} customers · {raw.drop(columns=['Churn','ChurnLabel']).shape[1]} input features · {int(raw.isna().sum().sum()):,} missing cells after numeric conversion. These are associations, not causal effects.")
 
 elif page == "Model evaluation":
-    st.subheader("Held-out model evaluation")
+    page_header("03 / Model validation", "How well does the model separate churn risk?", "Compare both candidates on the same held-out test set. Model selection used a separate validation split; the final test results were not used to choose the winner.")
     if not METRICS_PATH.is_file() or not MODEL_PATH.is_file():
         st.warning("No trained model artifacts yet. Run `python train_model.py` after placing the CSV in data/."); st.stop()
     meta=metadata(); metrics=meta["metrics"]
@@ -146,11 +202,11 @@ elif page == "Model evaluation":
         st.json(metrics[selected]["classification_report"])
 
 elif page == "Predict a customer":
-    st.subheader("Estimate an individual profile's churn risk")
+    page_header("04 / Customer scoring", "Estimate a customer’s churn risk", "Enter a hypothetical customer profile to get a probability from the saved model. This estimate is not a certainty or a guarantee of future behavior.")
     if not MODEL_PATH.is_file() or not METRICS_PATH.is_file(): st.warning("Train the model first to enable prediction."); st.stop()
     mdl=model_artifact(); meta=metadata(); feature_cols=meta["feature_columns"]
     sample=raw.drop(columns=["Churn","ChurnLabel"],errors="ignore")
-    st.write("Choose customer attributes below. Each change submits a fresh estimate through the saved training pipeline.")
+    st.write("Adjust the profile, then submit to score it with the same preprocessing and model used during training.")
     values={}
     with st.form("customer-profile"):
         cols=st.columns(3)
@@ -177,7 +233,7 @@ elif page == "Predict a customer":
             st.caption("This is a probability estimate, not certainty. Retention offers are not guaranteed to prevent churn.")
 
 else:
-    st.subheader("Business insights and limitations")
+    page_header("05 / Business context", "Turn model output into careful decisions", "Use risk estimates to prioritize a human review. Weigh potential customer value, outreach cost, campaign capacity, and the limits of historical data.")
     st.markdown("""**What the estimate means.** The classifier learns patterns associated with historical churn labels. It ranks profiles by estimated likelihood under this dataset and does not explain individual intent.
 
 **Using scores responsibly.** Combine risk with customer value, outreach cost, campaign capacity, and customer preferences. Test interventions with controlled measurement; a high score alone does not show that an offer will change the outcome.

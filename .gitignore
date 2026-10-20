@@ -12,7 +12,8 @@ __pycache__/
 .env
 .env.*
 !.env.example
-.streamlit/
+.streamlit/secrets.toml
+.streamlit/matplotlib/
 .vscode/
 .DS_Store
 Thumbs.db
